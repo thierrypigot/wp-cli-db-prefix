@@ -73,7 +73,6 @@ jobs:
       WP_DBP_DB_HOST: 127.0.0.1:3306
       WP_DBP_DB_USER: root
       WP_DBP_DB_PASS: root
-      WP_DBP_WORK_DIR: ${{ runner.temp }}/wp-cli-db-prefix-tests
     steps:
       - uses: actions/checkout@v4
 
