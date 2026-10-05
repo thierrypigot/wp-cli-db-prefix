@@ -4,16 +4,18 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.1] - 2026-10-05
+
+No change in how the command behaves.
+
+### Fixed
+
+- `command.php` now checks the `WP_CLI` constant instead of the `WP_CLI` class, so the command is never registered outside WP-CLI (the class also exists when WP-CLI is installed as a Composer dependency).
 
 ### Added
 
 - PHPUnit test suites: unit tests (no database) and integration tests running the real command through WP-CLI on single sites and multisite networks, including forced failures and a `--safe` backup and restore.
 - GitHub Actions workflow: unit tests on PHP 7.4 to 8.4, integration tests from PHP 7.4 + WordPress 6.2 + MySQL 8.0 to PHP 8.4 + latest WordPress + MariaDB 11.4.
-
-### Changed
-
-- `command.php` now checks the `WP_CLI` constant instead of the `WP_CLI` class, so the command is never registered outside WP-CLI (the class also exists when WP-CLI is a dev dependency).
 
 ## [1.1.0] - 2026-10-05
 
@@ -41,6 +43,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Object cache flushed after the rename.
 - English and French (`fr_FR`) translations, loaded from the site language.
 
-[Unreleased]: https://github.com/thierrypigot/wp-cli-db-prefix/compare/v1.1.0...HEAD
+[1.1.1]: https://github.com/thierrypigot/wp-cli-db-prefix/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/thierrypigot/wp-cli-db-prefix/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/thierrypigot/wp-cli-db-prefix/releases/tag/v1.0.0
