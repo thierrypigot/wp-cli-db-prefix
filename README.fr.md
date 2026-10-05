@@ -14,7 +14,7 @@ Le faire à la main est délicat : il faut renommer chaque tiroir, corriger plus
 
 ## Qui est derrière ?
 
-[Thierry Pigot](https://wearewp.pro), président de WeAre[WP], une agence française spécialisée dans WordPress. L'outil a été créé pour la maintenance des sites de nos clients, puis publié pour que tout le monde puisse s'en servir. Il est libre et gratuit (licence GPL).
+[Thierry Pigot](https://www.wearewp.pro), président de WeAre[WP], une agence française spécialisée dans WordPress. L'outil a été créé pour la maintenance des sites de nos clients, puis publié pour que tout le monde puisse s'en servir. Il est libre et gratuit (licence GPL).
 
 ## Pour qui ?
 

@@ -14,7 +14,7 @@ Doing it by hand is tricky: every drawer has to be renamed, several hidden setti
 
 ## Who is behind it?
 
-[Thierry Pigot](https://wearewp.pro), president of WeAre[WP], a French agency specialised in WordPress. The tool was built for the maintenance of our clients' sites, then published so anyone can use it. It is free and open source (GPL licence).
+[Thierry Pigot](https://www.wearewp.pro), president of WeAre[WP], a French agency specialised in WordPress. The tool was built for the maintenance of our clients' sites, then published so anyone can use it. It is free and open source (GPL licence).
 
 ## Who is it for?
 
