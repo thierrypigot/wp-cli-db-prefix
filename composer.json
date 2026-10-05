@@ -1,0 +1,32 @@
+{
+	"name": "thierrypigot/wp-cli-db-prefix",
+	"description": "WP-CLI command that safely renames the WordPress table prefix: pre-flight checks, atomic table rename, automatic rollback, multisite support.",
+	"type": "wp-cli-package",
+	"keywords": [
+		"wp-cli",
+		"wordpress",
+		"database",
+		"prefix",
+		"table_prefix",
+		"security"
+	],
+	"homepage": "https://github.com/thierrypigot/wp-cli-db-prefix",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Thierry Pigot",
+			"homepage": "https://wearewp.pro"
+		}
+	],
+	"support": {
+		"issues": "https://github.com/thierrypigot/wp-cli-db-prefix/issues"
+	},
+	"require": {
+		"php": ">=7.4"
+	},
+	"autoload": {
+		"files": [
+			"command.php"
+		]
+	}
+}
