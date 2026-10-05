@@ -2,7 +2,7 @@
 /**
  * WP-CLI DB Prefix: safely renames the WordPress table prefix.
  *
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            Thierry Pigot, WeAre[WP]
@@ -13,7 +13,8 @@
  * @package WP_CLI_DB_Prefix
  */
 
-if ( ! class_exists( 'WP_CLI' ) ) {
+// The WP_CLI constant, not the class: the class also exists when wp-cli/wp-cli is a dev dependency (unit tests).
+if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 	return;
 }
 

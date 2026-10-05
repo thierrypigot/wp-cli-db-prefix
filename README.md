@@ -119,7 +119,9 @@ Messages follow the site language: English and French (`fr_FR`, also used for `f
 
 ### Tests
 
-Tested on WordPress 7.1 with MariaDB 11.4: single site and 4-site multisite network (one archived), forced failures to check the rollback, `--safe` backup followed by a full restore.
+[![Tests](https://github.com/thierrypigot/wp-cli-db-prefix/actions/workflows/tests.yml/badge.svg)](https://github.com/thierrypigot/wp-cli-db-prefix/actions/workflows/tests.yml)
+
+PHPUnit unit tests, plus integration tests that run the real command on a real WordPress (single site and 4-site multisite network): rename, refusals, forced failures and rollback, `--safe` backup followed by a full restore. GitHub Actions runs them on every push, from PHP 7.4 + WordPress 6.2 to PHP 8.4 + latest WordPress, on MySQL and MariaDB. See [tests/README.md](tests/README.md) to run them locally.
 
 ### Licence
 

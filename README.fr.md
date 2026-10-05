@@ -119,7 +119,9 @@ Les messages suivent la langue du site : anglais et français (`fr_FR`, utilisé
 
 ### Tests
 
-Testé sur WordPress 7.1 avec MariaDB 11.4 : site simple et réseau multisite de 4 sites (dont un archivé), échecs provoqués pour vérifier l'annulation, sauvegarde `--safe` puis restauration complète.
+[![Tests](https://github.com/thierrypigot/wp-cli-db-prefix/actions/workflows/tests.yml/badge.svg)](https://github.com/thierrypigot/wp-cli-db-prefix/actions/workflows/tests.yml)
+
+Tests unitaires PHPUnit, et tests d'intégration qui lancent la vraie commande sur un vrai WordPress (site simple et réseau multisite de 4 sites) : renommage, refus, échecs provoqués et annulation, sauvegarde `--safe` puis restauration complète. GitHub Actions les lance à chaque envoi, de PHP 7.4 + WordPress 6.2 à PHP 8.4 + dernière version de WordPress, sur MySQL et MariaDB. Pour les lancer en local : [tests/README.md](tests/README.md).
 
 ### Licence
 
