@@ -7,213 +7,280 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-05T09:19:11+00:00\n"
+"POT-Creation-Date: 2026-10-05T09:34:51+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: wp-cli-db-prefix\n"
 
-#: src/class-wp-cli-db-prefix-command.php:92
+#. translators: %s: generated prefix.
+#: src/class-wp-cli-db-prefix-command.php:108
+msgid "Generated prefix: %s"
+msgstr ""
+
+#. translators: %s: command to run.
+#: src/class-wp-cli-db-prefix-command.php:114
+msgid "A new prefix is drawn on every run. To use this one, run: %s"
+msgstr ""
+
+#: src/class-wp-cli-db-prefix-command.php:117
 msgid "Dry run complete, nothing was changed."
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:96
-msgid "Back up before continuing: wp db export, plus a copy of wp-config.php."
+#: src/class-wp-cli-db-prefix-command.php:122
+msgid "Back up before continuing (or use --safe): wp db export, plus a copy of wp-config.php."
 msgstr ""
 
 #. translators: 1: site URL, 2: current prefix, 3: new prefix.
-#: src/class-wp-cli-db-prefix-command.php:99
+#: src/class-wp-cli-db-prefix-command.php:127
 msgid "Rename the table prefix of %1$s from \"%2$s\" to \"%3$s\"?"
 msgstr ""
 
 #. translators: %s: new prefix.
-#: src/class-wp-cli-db-prefix-command.php:127
+#: src/class-wp-cli-db-prefix-command.php:157
 msgid "wp-config.php was not changed. The site stays in maintenance mode (503) until you: 1. update the prefix (\"%s\") where it is defined; 2. run wp maintenance-mode deactivate."
 msgstr ""
 
 #. translators: 1: new prefix, 2: number of tables, 3: number of sites, 4: number of user meta keys.
-#: src/class-wp-cli-db-prefix-command.php:133
+#: src/class-wp-cli-db-prefix-command.php:163
 msgid "Prefix renamed to \"%1$s\": %2$d tables, %3$d site(s), %4$d user meta keys. Object cache flushed."
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:148
+#: src/class-wp-cli-db-prefix-command.php:211
+msgid "Could not generate a free prefix. Pass one explicitly."
+msgstr ""
+
+#. translators: %s: backup folder.
+#: src/class-wp-cli-db-prefix-command.php:250
+msgid "Backup folder %s is ambiguous: give a path without \"..\"."
+msgstr ""
+
+#. translators: %s: folder path.
+#: src/class-wp-cli-db-prefix-command.php:260
+msgid "Cannot write in %s. Use --backup-dir with a writable folder."
+msgstr ""
+
+#. translators: %s: folder path.
+#: src/class-wp-cli-db-prefix-command.php:269
+msgid "Could not create the backup folder %s. Use --backup-dir with a writable folder."
+msgstr ""
+
+#. translators: 1: backup folder, 2: web root.
+#: src/class-wp-cli-db-prefix-command.php:307
+msgid "Backup folder %1$s is inside the web root (%2$s): the backup could be downloaded. Use --backup-dir with a folder outside it."
+msgstr ""
+
+#. translators: %s: path to the SQL file.
+#: src/class-wp-cli-db-prefix-command.php:353
+msgid "Backing up the database to %s..."
+msgstr ""
+
+#. translators: %s: error output of the export.
+#: src/class-wp-cli-db-prefix-command.php:372
+msgid "Backup failed, nothing was changed: %s"
+msgstr ""
+
+#. translators: %s: path to the copy.
+#: src/class-wp-cli-db-prefix-command.php:384
+msgid "Could not copy wp-config.php to %s, nothing was changed."
+msgstr ""
+
+#. translators: %s: size of the SQL file.
+#: src/class-wp-cli-db-prefix-command.php:396
+msgid "Backup done (%s)."
+msgstr ""
+
+#: src/class-wp-cli-db-prefix-command.php:443
+msgid "To go back to the saved state:"
+msgstr ""
+
+#: src/class-wp-cli-db-prefix-command.php:452
+msgid "The backup holds your database credentials: delete it once the site has been checked."
+msgstr ""
+
+#: src/class-wp-cli-db-prefix-command.php:461
 msgid "WordPress 6.2 or later is required."
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:152
+#: src/class-wp-cli-db-prefix-command.php:465
 msgid "CUSTOM_USER_TABLE or CUSTOM_USER_META_TABLE is defined: shared user tables are not supported."
 msgstr ""
 
 #. translators: %s: rejected prefix.
-#: src/class-wp-cli-db-prefix-command.php:168
+#: src/class-wp-cli-db-prefix-command.php:481
 msgid "Prefix \"%s\" rejected: use lowercase letters, digits and underscores, start with a letter and end with an underscore."
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:172
+#: src/class-wp-cli-db-prefix-command.php:485
 msgid "The new prefix is the same as the current one."
 msgstr ""
 
 #. translators: %s: database error.
-#: src/class-wp-cli-db-prefix-command.php:202
+#: src/class-wp-cli-db-prefix-command.php:516
 msgid "Could not list tables: %s"
 msgstr ""
 
 #. translators: %s: table name.
-#: src/class-wp-cli-db-prefix-command.php:227
+#: src/class-wp-cli-db-prefix-command.php:541
 msgid "Table %s not found: the current prefix does not match the database."
 msgstr ""
 
 #. translators: 1: table name, 2: table type.
-#: src/class-wp-cli-db-prefix-command.php:261
+#: src/class-wp-cli-db-prefix-command.php:575
 msgid "%1$s is a view (%2$s): its definition would still reference the old names. Not supported."
 msgstr ""
 
 #. translators: 1: maximum length, 2: table name.
-#: src/class-wp-cli-db-prefix-command.php:268
+#: src/class-wp-cli-db-prefix-command.php:582
 msgid "Name too long after renaming (%1$d characters maximum): %2$s. Choose a shorter prefix."
 msgstr ""
 
 #. translators: %s: table name.
-#: src/class-wp-cli-db-prefix-command.php:283
+#: src/class-wp-cli-db-prefix-command.php:597
 msgid "Table %s already exists."
 msgstr ""
 
 #. translators: 1: table name, 2: site ID.
-#: src/class-wp-cli-db-prefix-command.php:297
+#: src/class-wp-cli-db-prefix-command.php:611
 msgid "Table %1$s of site %2$d not found."
 msgstr ""
 
 #. translators: 1: option name, 2: table name.
-#: src/class-wp-cli-db-prefix-command.php:304
+#: src/class-wp-cli-db-prefix-command.php:618
 msgid "Option %1$s not found in %2$s."
 msgstr ""
 
 #. translators: 1: option name, 2: table name.
-#: src/class-wp-cli-db-prefix-command.php:311
+#: src/class-wp-cli-db-prefix-command.php:625
 msgid "Option %1$s already exists in %2$s (left over from a previous attempt?)."
 msgstr ""
 
 #. translators: 1: number of user meta keys, 2: new prefix.
-#: src/class-wp-cli-db-prefix-command.php:324
+#: src/class-wp-cli-db-prefix-command.php:638
 msgid "%1$d user meta key already starts with \"%2$s\". Choose another prefix."
 msgid_plural "%1$d user meta keys already start with \"%2$s\". Choose another prefix."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: database error.
-#: src/class-wp-cli-db-prefix-command.php:368
+#: src/class-wp-cli-db-prefix-command.php:682
 msgid "Could not list the network sites: %s"
 msgstr ""
 
 #. translators: 1: trigger name, 2: table name.
-#: src/class-wp-cli-db-prefix-command.php:418
+#: src/class-wp-cli-db-prefix-command.php:732
 msgid "Trigger %1$s is attached to %2$s: not supported."
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:435
+#: src/class-wp-cli-db-prefix-command.php:749
 msgid "wp-config.php not found or not readable."
 msgstr ""
 
 #. translators: %s: path to wp-config.php.
-#: src/class-wp-cli-db-prefix-command.php:440
+#: src/class-wp-cli-db-prefix-command.php:754
 msgid "%s is not writable. Fix the permissions, or use --skip-config and edit it by hand."
 msgstr ""
 
 #. translators: 1: number of lines found, 2: path to wp-config.php.
-#: src/class-wp-cli-db-prefix-command.php:449
+#: src/class-wp-cli-db-prefix-command.php:763
 msgid "%1$d \"$table_prefix = '...';\" lines found in %2$s (exactly one expected). Use --skip-config and change the prefix by hand."
 msgstr ""
 
 #. translators: 1: path to wp-config.php, 2: prefix found in the file, 3: prefix used by WordPress.
-#: src/class-wp-cli-db-prefix-command.php:454
+#: src/class-wp-cli-db-prefix-command.php:768
 msgid "%1$s sets the prefix \"%2$s\" but WordPress uses \"%3$s\". Use --skip-config."
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:470
+#: src/class-wp-cli-db-prefix-command.php:784
 msgid "table"
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:471
+#: src/class-wp-cli-db-prefix-command.php:785
 msgid "new name"
 msgstr ""
 
 #. translators: %d: number of tables.
-#: src/class-wp-cli-db-prefix-command.php:484
+#: src/class-wp-cli-db-prefix-command.php:798
 msgid "Tables to rename: %d"
 msgstr ""
 
 #. translators: %d: number of sites.
-#: src/class-wp-cli-db-prefix-command.php:488
+#: src/class-wp-cli-db-prefix-command.php:802
 msgid "Multisite network: %d sites, user_roles option renamed in each."
 msgstr ""
 
 #. translators: 1: current option name, 2: new option name.
-#: src/class-wp-cli-db-prefix-command.php:491
+#: src/class-wp-cli-db-prefix-command.php:805
 msgid "Option %1$s renamed to %2$s"
 msgstr ""
 
 #. translators: %d: number of user meta keys.
-#: src/class-wp-cli-db-prefix-command.php:495
+#: src/class-wp-cli-db-prefix-command.php:809
 msgid "User meta keys to rename: %d"
 msgstr ""
 
 #. translators: %s: path to wp-config.php.
-#: src/class-wp-cli-db-prefix-command.php:499
+#: src/class-wp-cli-db-prefix-command.php:813
 msgid "wp-config.php: %s"
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:501
+#: src/class-wp-cli-db-prefix-command.php:815
 msgid "wp-config.php: not changed (--skip-config)"
 msgstr ""
 
+#. translators: %s: backup folder.
+#: src/class-wp-cli-db-prefix-command.php:820
+msgid "Backup before renaming (--safe): %s"
+msgstr ""
+
 #. translators: 1: other prefixes found, 2: number of excluded tables, 3: excluded tables.
-#: src/class-wp-cli-db-prefix-command.php:508
+#: src/class-wp-cli-db-prefix-command.php:827
 msgid "Other installation(s) found in the database (%1$s). These %2$d tables will not be touched: %3$s"
 msgstr ""
 
 #. translators: %s: database error.
-#: src/class-wp-cli-db-prefix-command.php:532
+#: src/class-wp-cli-db-prefix-command.php:851
 msgid "Table rename failed, nothing was changed: %s"
 msgstr ""
 
 #. translators: 1: option name, 2: database error.
-#: src/class-wp-cli-db-prefix-command.php:543
+#: src/class-wp-cli-db-prefix-command.php:862
 msgid "Could not rename option %1$s: %2$s"
 msgstr ""
 
 #. translators: %s: database error.
-#: src/class-wp-cli-db-prefix-command.php:553
+#: src/class-wp-cli-db-prefix-command.php:872
 msgid "Could not rename user meta keys: %s"
 msgstr ""
 
 #. translators: %s: path to wp-config.php.
-#: src/class-wp-cli-db-prefix-command.php:564
+#: src/class-wp-cli-db-prefix-command.php:883
 msgid "Could not write %s."
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:571
+#: src/class-wp-cli-db-prefix-command.php:890
 msgid "Rollback failed, restore your backup:"
 msgstr ""
 
-#: src/class-wp-cli-db-prefix-command.php:574
+#: src/class-wp-cli-db-prefix-command.php:893
 msgid "All changes were rolled back."
 msgstr ""
 
 #. translators: 1: current prefix, 2: path to wp-config.php.
-#: src/class-wp-cli-db-prefix-command.php:598
+#: src/class-wp-cli-db-prefix-command.php:917
 msgid "- wp-config.php: set $table_prefix = '%1$s'; back in %2$s"
 msgstr ""
 
 #. translators: %s: database error.
-#: src/class-wp-cli-db-prefix-command.php:605
+#: src/class-wp-cli-db-prefix-command.php:924
 msgid "- user meta keys: %s"
 msgstr ""
 
 #. translators: 1: option name, 2: database error.
-#: src/class-wp-cli-db-prefix-command.php:615
+#: src/class-wp-cli-db-prefix-command.php:934
 msgid "- option %1$s: %2$s"
 msgstr ""
 
 #. translators: %s: database error.
-#: src/class-wp-cli-db-prefix-command.php:622
+#: src/class-wp-cli-db-prefix-command.php:941
 msgid "- tables: %s"
 msgstr ""
