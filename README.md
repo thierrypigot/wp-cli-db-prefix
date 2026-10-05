@@ -2,100 +2,125 @@
 
 [Français](README.fr.md)
 
-WP-CLI command that safely renames the WordPress table prefix (`wp_` by default), on a single site or a multisite network.
+A free tool to change the table "prefix" of a WordPress site, without breaking anything.
 
-It checks everything before changing anything, renames every table in one atomic statement, rewrites `wp-config.php` last, and rolls back automatically if a step fails.
+## What is it?
 
-## Requirements
+A WordPress site stores everything (pages, posts, accounts, settings) in a database. That database is split into drawers called "tables". Every drawer's name starts with the same label: `wp_`, unless someone changed it at install time.
 
-- WP-CLI 2.x
-- WordPress 6.2 or later
-- PHP 7.4 or later
-- MySQL or MariaDB
+Since that label is the same on millions of sites, the robots that attack websites know it. Replacing it with a label of your own, such as `k7qm_`, makes their job a little harder. It is a small security measure, on top of the others (updates, strong passwords, backups), not a protection on its own.
+
+Doing it by hand is tricky: every drawer has to be renamed, several hidden settings fixed and the site's configuration file edited. Miss one thing and the site stops showing up. This tool does it all in a single command. It checks everything before starting, and if anything goes wrong, it puts the site back exactly as it was.
+
+## Who is behind it?
+
+[Thierry Pigot](https://wearewp.pro), president of WeAre[WP], a French agency specialised in WordPress. The tool was built for the maintenance of our clients' sites, then published so anyone can use it. It is free and open source (GPL licence).
+
+## Who is it for?
+
+The tool runs with **WP-CLI**, WordPress's "terminal": you type commands instead of clicking in the dashboard. It is the tool of the people who look after a site technically (developer, agency, host).
+
+If that is not you, simply send this page to the person who manages your site.
 
 ## Installation
 
-As a WP-CLI package, installed for the current system user:
+One command, on the site's server:
 
 ```bash
 wp package install thierrypigot/wp-cli-db-prefix
 ```
 
-Or one-off, without installing anything:
+## How it works
+
+**1. See what will happen, without touching anything:**
 
 ```bash
-git clone https://github.com/thierrypigot/wp-cli-db-prefix.git
-wp --require=wp-cli-db-prefix/command.php db-prefix rename wawp7k_ --dry-run
+wp db-prefix rename --dry-run
 ```
 
-## Usage
+The tool picks a new random label (for example `k7qm_`), lists everything it would do, and stops there. Nothing is changed.
+
+**2. Make the change, with a backup first:**
 
 ```bash
-# 1. Back up.
-wp db export before-prefix.sql
-cp wp-config.php wp-config.php.before-prefix
-
-# 2. Preview.
-wp db-prefix rename wawp7k_ --dry-run
-
-# 3. Rename (asks for confirmation).
-wp db-prefix rename wawp7k_
+wp db-prefix rename --safe
 ```
 
-`wp-config.php.before-prefix` contains your database credentials: delete it once the site has been checked.
+The tool backs up the site, asks for confirmation, changes the label, then shows the commands to go back if needed. To choose the label yourself, add it: `wp db-prefix rename k7qm_ --safe`.
 
-On a multisite network, run the command once, from the network's main site.
+**3. Check the site**, then delete the backup: it holds the database passwords.
+
+## What the tool does to protect your site
+
+- **It checks everything before starting.** At the slightest doubt, it stops without touching anything and explains why.
+- **It backs up first**, with `--safe`, in a folder site visitors cannot reach.
+- **It puts the site in maintenance mode** during the operation, which takes a few seconds: visitors see a waiting message instead of an error.
+- **It changes all the drawers at once**: either everything is renamed, or nothing is.
+- **It edits the configuration file last**, once everything else has succeeded.
+- **It undoes everything if a step fails**, and says so clearly.
+- **It leaves other sites alone** if they share the same database.
+
+It also works on networks of sites (WordPress multisite), and speaks English or French depending on the site language.
+
+---
+
+## Going further (technical part)
+
+### Requirements
+
+WP-CLI 2.x, WordPress 6.2 or later, PHP 7.4 or later, MySQL or MariaDB. `mysqldump` (or `mariadb-dump`) is needed for `--safe`.
+
+Without installing, one-off: `wp --require=path/to/wp-cli-db-prefix/command.php db-prefix rename --dry-run`.
 
 ### Options
 
 | Option | Effect |
 |---|---|
-| `--dry-run` | Shows the plan without changing anything. |
-| `--skip-config` | Leaves `wp-config.php` untouched, for a prefix defined elsewhere (environment variable, Bedrock, etc.). The site then stays in maintenance mode (503): update the prefix where it is defined, then run `wp maintenance-mode deactivate`. Without that, WordPress would show the installation screen to any visitor. |
+| `[<new_prefix>]` | New prefix: lowercase letters, digits and underscores, starting with a letter and ending with an underscore. If omitted, a 4-character prefix is drawn at random (`random_int()`), free of conflicts with existing tables. |
+| `--dry-run` | Shows the plan without changing anything. With a random prefix, the command shows how to run again with that exact prefix, since a new one is drawn on every run. |
+| `--safe` | Exports the affected tables (`wp db export`) and copies `wp-config.php` before any change. The export content is checked. If the backup fails, the command stops without changing anything. |
+| `--backup-dir=<path>` | Backup folder. Default: `private_html/db-prefix-backups` (Cloudways) or `db-prefix-backups`, next to the site folder. A folder inside the web root is refused. |
+| `--skip-config` | Leaves `wp-config.php` untouched (prefix defined in an environment variable, Bedrock, etc.). The site stays in maintenance mode: update the prefix where it is defined, then run `wp maintenance-mode deactivate`. |
 | `--yes` | Skips the confirmation (scripts). |
 
-The new prefix must contain only lowercase letters, digits and underscores, start with a letter and end with an underscore.
+### Sequence
 
-## What it does
+1. Checks: prefix format, core tables (and network tables on multisite), name conflicts, 64-character limit, views and triggers (refused), `user_roles` option of every site, user meta keys already using the new prefix, single writable `$table_prefix` line in `wp-config.php`.
+2. With `--safe`: checked SQL export and copy of `wp-config.php`, unguessable file names, `600` permissions, folder protected by an `.htaccess` and an `index.php` as a second line of defence.
+3. Maintenance mode (`.maintenance` file).
+4. Every table renamed in a single atomic `RENAME TABLE` statement. Foreign keys follow.
+5. `{prefix}user_roles` option, or `{prefix}{id}_user_roles` on each site of a network.
+6. `{prefix}*` user meta keys, in one query.
+7. `wp-config.php`, last.
+8. Object cache flushed.
 
-1. **Checks everything before changing anything:**
-   - prefix format;
-   - core tables present (and network tables on multisite);
-   - no table already uses a target name;
-   - no name longer than 64 characters;
-   - no views or triggers on the tables (refused);
-   - `user_roles` option present on every site;
-   - no user meta key already using the new prefix;
-   - a single, writable `$table_prefix` line in `wp-config.php`.
-2. **Puts the site in maintenance mode** (`.maintenance` file), so visitors get a 503 instead of an error or the installation screen.
-3. **Renames every table in a single `RENAME TABLE` statement.** MySQL renames all or nothing, and foreign keys follow.
-4. Renames the `{prefix}user_roles` option, or `{prefix}{id}_user_roles` on each site of a network.
-5. Renames the `{prefix}*` user meta keys (capabilities, user level, settings, `{prefix}{id}_*` on a network) in one query.
-6. **Rewrites `wp-config.php` last.**
-7. Flushes the object cache (Redis, Memcached).
+On failure, the steps already applied are rolled back in reverse order. If the rollback itself fails, the command lists what is left to fix by hand.
 
-If a step fails, the steps already applied are rolled back in reverse order, and the command says so. If the rollback itself fails, the command lists what is left to fix by hand.
+### Going back to the saved state
 
-**Another installation in the same database:** if the database also holds a site whose prefix starts with yours (e.g. `wp_shop_` while renaming `wp_`), its tables are detected, listed and left untouched.
+After a rename with `--safe`, the command prints the exact commands to run. They follow this pattern:
 
-## Translations
+```bash
+cp <backup>/wp-config-<date>.php wp-config.php
+wp db import <backup>/db-prefix-<old>_<date>.sql
+wp db query "DROP TABLE $(wp db tables '<new>*' --all-tables --format=csv)"
+wp cache flush
+```
 
-Messages follow the site language. English and French (`fr_FR`) are included, and other variants of French (`fr_BE`, `fr_CA`...) use `fr_FR`. To add a language, translate `languages/wp-cli-db-prefix.pot`, then generate the `.mo` file with `wp i18n make-mo languages`.
+### Translations
 
-The command help (`wp help db-prefix rename`) stays in English: WP-CLI reads it from the code and does not translate it.
+Messages follow the site language: English and French (`fr_FR`, also used for `fr_BE`, `fr_CA`, etc.). To add a language, translate `languages/wp-cli-db-prefix.pot`, then run `wp i18n make-mo languages`. The command help (`wp help db-prefix rename`) stays in English: WP-CLI reads it from the code and does not translate it.
 
-## Limits
+### Limits
 
 - `CUSTOM_USER_TABLE` / `CUSTOM_USER_META_TABLE` are not supported (refused).
-- Only the `user_roles` option is renamed in the options tables, as WordPress itself does. A plugin storing an option named after `$wpdb->prefix` has to be fixed by hand (rare).
-- Flushing the object cache flushes all of it (like `wp cache flush`), including the cache of other sites sharing the same Redis server.
+- Only the `user_roles` option is renamed in the options tables, as WordPress does. A plugin storing an option named after `$wpdb->prefix` has to be fixed by hand (rare).
+- Flushing the object cache flushes all of it, including the cache of other sites sharing the same Redis server.
 
-## Development
+### Tests
 
-Tested on WordPress 7.1 with MariaDB 11.4, on a single site and on a 4-site multisite network (one archived site), including forced failures to check the rollback.
+Tested on WordPress 7.1 with MariaDB 11.4: single site and 4-site multisite network (one archived), forced failures to check the rollback, `--safe` backup followed by a full restore.
 
-## License
+### Licence
 
-GPL-2.0-or-later. See [LICENSE](LICENSE).
-
-Developed by [Thierry Pigot](https://wearewp.pro), WeAre[WP].
+GPL-2.0-or-later. See [LICENSE](LICENSE). Release history: [CHANGELOG.md](CHANGELOG.md).
