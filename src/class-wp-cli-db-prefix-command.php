@@ -50,11 +50,17 @@ class WP_CLI_DB_Prefix_Command extends WP_CLI_Command {
 	 *
 	 * ## OPTIONS
 	 *
-	 * <new_prefix>
-	 * : New prefix: lowercase letters, digits and underscores, starting with a letter and ending with an underscore. Example: wawp7k_
+	 * [<new_prefix>]
+	 * : New prefix: lowercase letters, digits and underscores, starting with a letter and ending with an underscore. Example: wawp7k_. If omitted, a random prefix such as k7qm_ is generated.
 	 *
 	 * [--dry-run]
 	 * : Show what would be done, without changing anything.
+	 *
+	 * [--safe]
+	 * : Back up the database tables and wp-config.php before changing anything. The command stops if the backup fails.
+	 *
+	 * [--backup-dir=<path>]
+	 * : Folder for the --safe backup. Must be outside the web root. Default: private_html/db-prefix-backups or db-prefix-backups, next to the site folder.
 	 *
 	 * [--skip-config]
 	 * : Leave wp-config.php untouched (prefix defined elsewhere, e.g. in an environment variable). The site then stays in maintenance mode until you update the prefix and run `wp maintenance-mode deactivate`.
@@ -64,11 +70,11 @@ class WP_CLI_DB_Prefix_Command extends WP_CLI_Command {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Preview.
-	 *     $ wp db-prefix rename wawp7k_ --dry-run
+	 *     # Preview with a random prefix.
+	 *     $ wp db-prefix rename --dry-run
 	 *
-	 *     # Rename.
-	 *     $ wp db-prefix rename wawp7k_
+	 *     # Back up, then rename to a chosen prefix.
+	 *     $ wp db-prefix rename wawp7k_ --safe
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
@@ -76,29 +82,53 @@ class WP_CLI_DB_Prefix_Command extends WP_CLI_Command {
 	public function rename( $args, $assoc_args ) {
 		global $wpdb;
 
-		$new_prefix  = $args[0];
 		$old_prefix  = $wpdb->base_prefix;
 		$dry_run     = (bool) WP_CLI\Utils\get_flag_value( $assoc_args, 'dry-run', false );
 		$skip_config = (bool) WP_CLI\Utils\get_flag_value( $assoc_args, 'skip-config', false );
+		$safe        = (bool) WP_CLI\Utils\get_flag_value( $assoc_args, 'safe', false );
+		$backup_dir  = WP_CLI\Utils\get_flag_value( $assoc_args, 'backup-dir', '' );
+		$generated   = ! isset( $args[0] );
 
 		$this->check_environment();
+
+		$new_prefix = $generated ? $this->generate_prefix( $old_prefix ) : $args[0];
+
 		$this->validate_prefix( $new_prefix, $old_prefix );
 
 		$plan = $this->build_plan( $old_prefix, $new_prefix, $skip_config );
 
+		if ( $safe ) {
+			$plan['backup_dir'] = $this->resolve_backup_dir( $backup_dir, ! $dry_run );
+		}
+
 		$this->print_plan( $plan );
 
+		if ( $generated ) {
+			/* translators: %s: generated prefix. */
+			WP_CLI::log( sprintf( __( 'Generated prefix: %s', 'wp-cli-db-prefix' ), $new_prefix ) );
+		}
+
 		if ( $dry_run ) {
+			if ( $generated ) {
+				/* translators: %s: command to run. */
+				WP_CLI::log( sprintf( __( 'A new prefix is drawn on every run. To use this one, run: %s', 'wp-cli-db-prefix' ), 'wp db-prefix rename ' . $new_prefix ) );
+			}
+
 			WP_CLI::success( __( 'Dry run complete, nothing was changed.', 'wp-cli-db-prefix' ) );
 			return;
 		}
 
-		WP_CLI::warning( __( 'Back up before continuing: wp db export, plus a copy of wp-config.php.', 'wp-cli-db-prefix' ) );
+		if ( ! $safe ) {
+			WP_CLI::warning( __( 'Back up before continuing (or use --safe): wp db export, plus a copy of wp-config.php.', 'wp-cli-db-prefix' ) );
+		}
+
 		WP_CLI::confirm(
 			/* translators: 1: site URL, 2: current prefix, 3: new prefix. */
 			sprintf( __( 'Rename the table prefix of %1$s from "%2$s" to "%3$s"?', 'wp-cli-db-prefix' ), home_url(), $old_prefix, $new_prefix ),
 			$assoc_args
 		);
+
+		$backup = $safe ? $this->backup( $plan ) : null;
 
 		$this->enable_maintenance();
 
@@ -137,6 +167,289 @@ class WP_CLI_DB_Prefix_Command extends WP_CLI_Command {
 				$plan['usermeta_count']
 			)
 		);
+
+		if ( $backup ) {
+			$this->print_restore_steps( $backup, $plan );
+		}
+	}
+
+	/**
+	 * Draws a random prefix such as k7qm_: one letter, three letters or digits, an underscore.
+	 *
+	 * Draws again when tables or user meta keys already use the prefix.
+	 *
+	 * @param string $old_prefix Current prefix.
+	 * @return string Generated prefix.
+	 */
+	private function generate_prefix( $old_prefix ) {
+		global $wpdb;
+
+		$letters    = 'abcdefghijklmnopqrstuvwxyz';
+		$characters = $letters . '0123456789';
+
+		for ( $attempt = 0; $attempt < 20; $attempt++ ) {
+			$prefix = $letters[ random_int( 0, 25 ) ];
+
+			for ( $i = 0; $i < 3; $i++ ) {
+				$prefix .= $characters[ random_int( 0, 35 ) ];
+			}
+
+			$prefix .= '_';
+
+			if ( $prefix === $old_prefix ) {
+				continue;
+			}
+
+			$tables = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE %s', $wpdb->esc_like( $prefix ) . '%' ) );
+			$keys   = $wpdb->get_var( $this->usermeta_count_query( $old_prefix . 'usermeta', $prefix ) );
+
+			if ( 0 === (int) $tables && 0 === (int) $keys ) {
+				return $prefix;
+			}
+		}
+
+		WP_CLI::error( __( 'Could not generate a free prefix. Pass one explicitly.', 'wp-cli-db-prefix' ) );
+	}
+
+	/**
+	 * Finds the backup folder and checks it is outside the web root.
+	 *
+	 * The backup holds the database credentials (wp-config.php) and all the
+	 * content: inside the web root, it could be downloaded by anyone.
+	 *
+	 * @param string $dir    Folder given with --backup-dir, or empty for the default.
+	 * @param bool   $create Create the folder (false for a dry run).
+	 * @return string Absolute path of the backup folder.
+	 */
+	private function resolve_backup_dir( $dir, $create ) {
+		if ( ! function_exists( 'get_home_path' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+
+		$web_roots = array_unique( array_filter( array( realpath( get_home_path() ), realpath( ABSPATH ) ) ) );
+
+		if ( '' === $dir ) {
+			// Next to the site folder, never inside it. On Cloudways, private_html is meant for this.
+			$parent = dirname( reset( $web_roots ) );
+			$dir    = is_dir( $parent . '/private_html' ) ? $parent . '/private_html/db-prefix-backups' : $parent . '/db-prefix-backups';
+		}
+
+		$dir = rtrim( str_replace( '\\', '/', $dir ), '/' );
+
+		// The folder may not exist yet: resolve its closest existing parent, then add the missing part.
+		$existing = $dir;
+		while ( ! file_exists( $existing ) && dirname( $existing ) !== $existing ) {
+			$existing = dirname( $existing );
+		}
+
+		$missing = substr( $dir, strlen( $existing ) );
+
+		// "..", in the part that does not exist yet, cannot be resolved now and could lead back into the web root.
+		if ( 1 === preg_match( '#(^|/)\.\.(/|$)#', $missing ) ) {
+			/* translators: %s: backup folder. */
+			WP_CLI::error( sprintf( __( 'Backup folder %s is ambiguous: give a path without "..".', 'wp-cli-db-prefix' ), $dir ) );
+		}
+
+		$dir = rtrim( $this->normalize_path( realpath( $existing ) . '/' . $missing ), '/' );
+
+		$this->check_outside_web_roots( $dir, $web_roots );
+
+		if ( ! $create ) {
+			if ( ! is_writable( $existing ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
+				/* translators: %s: folder path. */
+				WP_CLI::error( sprintf( __( 'Cannot write in %s. Use --backup-dir with a writable folder.', 'wp-cli-db-prefix' ), $existing ) );
+			}
+
+			return $dir;
+		}
+
+		if ( ! is_dir( $dir ) ) {
+			if ( ! wp_mkdir_p( $dir ) ) {
+				/* translators: %s: folder path. */
+				WP_CLI::error( sprintf( __( 'Could not create the backup folder %s. Use --backup-dir with a writable folder.', 'wp-cli-db-prefix' ), $dir ) );
+			}
+
+			chmod( $dir, 0700 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+		}
+
+		// Check again on the real path, symbolic links resolved.
+		$this->check_outside_web_roots( rtrim( $this->normalize_path( realpath( $dir ) ), '/' ), $web_roots );
+
+		// Second line of defence if the folder ever ends up served by Apache or LiteSpeed.
+		// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		if ( ! file_exists( $dir . '/.htaccess' ) ) {
+			file_put_contents( $dir . '/.htaccess', "Require all denied\nDeny from all\n" );
+		}
+
+		if ( ! file_exists( $dir . '/index.php' ) ) {
+			file_put_contents( $dir . '/index.php', "<?php\n// Silence is golden.\n" );
+		}
+		// phpcs:enable
+
+		return $dir;
+	}
+
+	/**
+	 * Stops the command if a folder is inside one of the web roots.
+	 *
+	 * @param string   $dir       Absolute folder path.
+	 * @param string[] $web_roots Absolute web root paths.
+	 */
+	private function check_outside_web_roots( $dir, $web_roots ) {
+		$target = $this->normalize_path( $dir );
+
+		foreach ( $web_roots as $web_root ) {
+			$web_root = $this->normalize_path( $web_root );
+
+			// Case-insensitive: Windows and macOS file systems usually are.
+			if ( 0 === stripos( $target, $web_root ) ) {
+				/* translators: 1: backup folder, 2: web root. */
+				WP_CLI::error( sprintf( __( 'Backup folder %1$s is inside the web root (%2$s): the backup could be downloaded. Use --backup-dir with a folder outside it.', 'wp-cli-db-prefix' ), $dir, rtrim( $web_root, '/' ) ) );
+			}
+		}
+	}
+
+	/**
+	 * Normalizes a path for comparison: forward slashes, no "//", trailing slash.
+	 *
+	 * @param string $path Path.
+	 * @return string Normalized path.
+	 */
+	private function normalize_path( $path ) {
+		$path = preg_replace( '#/+#', '/', str_replace( '\\', '/', $path ) );
+
+		return rtrim( $path, '/' ) . '/';
+	}
+
+	/**
+	 * Backs up the tables to rename and wp-config.php, and checks the backup.
+	 *
+	 * Stops the command, before any change, if anything goes wrong.
+	 *
+	 * @param array $plan Rename plan.
+	 * @return array Paths of the SQL file and of the wp-config.php copy.
+	 */
+	private function backup( $plan ) {
+		global $wpdb;
+
+		// Unguessable names: one more barrier if the folder is ever exposed.
+		$stamp = gmdate( 'Ymd-His' ) . '-' . bin2hex( random_bytes( 4 ) );
+		$sql   = $plan['backup_dir'] . '/db-prefix-' . $plan['old_prefix'] . $stamp . '.sql';
+
+		// --tables or --exclude_tables, whichever list is shorter (command line length on large networks).
+		$all    = $wpdb->get_col( 'SHOW TABLES' );
+		$tables = array_keys( $plan['tables'] );
+		$others = array_values( array_diff( $all, $tables ) );
+
+		$command = 'db export ' . escapeshellarg( $sql );
+
+		if ( count( $tables ) <= count( $others ) ) {
+			$command .= ' --tables=' . escapeshellarg( implode( ',', $tables ) );
+		} elseif ( $others ) {
+			$command .= ' --exclude_tables=' . escapeshellarg( implode( ',', $others ) );
+		}
+
+		/* translators: %s: path to the SQL file. */
+		WP_CLI::log( sprintf( __( 'Backing up the database to %s...', 'wp-cli-db-prefix' ), $sql ) );
+
+		// Separate process: in-process, a failed mysqldump exits WP-CLI before this command can report it.
+		$result = WP_CLI::runcommand(
+			$command,
+			array(
+				'return'     => 'all',
+				'launch'     => true,
+				'exit_error' => false,
+			)
+		);
+
+		if ( 0 !== $result->return_code || ! $this->sql_backup_is_valid( $sql, $plan['old_prefix'] . 'options' ) ) {
+			// No partial dump left behind: it would look like a usable backup.
+			if ( file_exists( $sql ) ) {
+				wp_delete_file( $sql );
+			}
+
+			/* translators: %s: error output of the export. */
+			WP_CLI::error( sprintf( __( 'Backup failed, nothing was changed: %s', 'wp-cli-db-prefix' ), trim( $result->stderr ) ) );
+		}
+
+		$config = WP_CLI\Utils\locate_wp_config();
+		$copy   = '';
+
+		if ( $config ) {
+			// .php extension: if the copy is ever served, PHP runs it instead of showing the credentials.
+			$copy = $plan['backup_dir'] . '/wp-config-' . $stamp . '.php';
+
+			if ( ! copy( $config, $copy ) || filesize( $copy ) !== filesize( $config ) ) {
+				/* translators: %s: path to the copy. */
+				WP_CLI::error( sprintf( __( 'Could not copy wp-config.php to %s, nothing was changed.', 'wp-cli-db-prefix' ), $copy ) );
+			}
+		}
+
+		// Readable by the owner only (no effect on Windows).
+		chmod( $sql, 0600 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+
+		if ( $copy ) {
+			chmod( $copy, 0600 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+		}
+
+		/* translators: %s: size of the SQL file. */
+		WP_CLI::log( sprintf( __( 'Backup done (%s).', 'wp-cli-db-prefix' ), size_format( filesize( $sql ) ) ) );
+
+		return array(
+			'sql'         => $sql,
+			'config'      => $copy,
+			'config_path' => $config,
+		);
+	}
+
+	/**
+	 * Checks that the SQL file is not empty and contains the options table.
+	 *
+	 * Reads line by line to stay light on large dumps.
+	 *
+	 * @param string $file  Path to the SQL file.
+	 * @param string $table Table that must be in the dump.
+	 * @return bool Whether the dump looks complete.
+	 */
+	private function sql_backup_is_valid( $file, $table ) {
+		if ( ! is_file( $file ) || 0 === filesize( $file ) ) {
+			return false;
+		}
+
+		$handle = fopen( $file, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+		$needle = 'CREATE TABLE `' . $table . '`';
+		$found  = false;
+
+		while ( false !== ( $line = fgets( $handle ) ) ) { // phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition
+			if ( false !== strpos( $line, $needle ) ) {
+				$found = true;
+				break;
+			}
+		}
+
+		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+
+		return $found;
+	}
+
+	/**
+	 * Prints how to go back to the state saved by --safe.
+	 *
+	 * @param array $backup Paths returned by backup().
+	 * @param array $plan   Rename plan.
+	 */
+	private function print_restore_steps( $backup, $plan ) {
+		WP_CLI::log( '' );
+		WP_CLI::log( __( 'To go back to the saved state:', 'wp-cli-db-prefix' ) );
+
+		if ( $backup['config'] ) {
+			WP_CLI::log( sprintf( '  cp %s %s', escapeshellarg( $backup['config'] ), escapeshellarg( $backup['config_path'] ) ) );
+		}
+
+		WP_CLI::log( sprintf( '  wp db import %s', escapeshellarg( $backup['sql'] ) ) );
+		WP_CLI::log( sprintf( '  wp db query "DROP TABLE $(wp db tables \'%s*\' --all-tables --format=csv)"', $plan['new_prefix'] ) );
+		WP_CLI::log( '  wp cache flush' );
+		WP_CLI::log( __( 'The backup holds your database credentials: delete it once the site has been checked.', 'wp-cli-db-prefix' ) );
 	}
 
 	/**
@@ -193,6 +506,7 @@ class WP_CLI_DB_Prefix_Command extends WP_CLI_Command {
 			'sites'            => array(),
 			'usermeta_count'   => 0,
 			'config'           => null,
+			'backup_dir'       => '',
 		);
 
 		$all_tables = $wpdb->get_results( 'SHOW FULL TABLES', ARRAY_N );
@@ -499,6 +813,11 @@ class WP_CLI_DB_Prefix_Command extends WP_CLI_Command {
 			WP_CLI::log( sprintf( __( 'wp-config.php: %s', 'wp-cli-db-prefix' ), $plan['config']['path'] ) );
 		} else {
 			WP_CLI::log( __( 'wp-config.php: not changed (--skip-config)', 'wp-cli-db-prefix' ) );
+		}
+
+		if ( $plan['backup_dir'] ) {
+			/* translators: %s: backup folder. */
+			WP_CLI::log( sprintf( __( 'Backup before renaming (--safe): %s', 'wp-cli-db-prefix' ), $plan['backup_dir'] ) );
 		}
 
 		if ( $plan['foreign_prefixes'] ) {
