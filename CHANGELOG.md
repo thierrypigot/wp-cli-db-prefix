@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-05
+
+### Added
+
+- The new prefix is now optional: when omitted, a random 4-character prefix (such as `k7qm_`) is generated with `random_int()`, free of conflicts with existing tables and user meta keys. A dry run shows the command to run again with that exact prefix.
+- `--safe` option: backs up the affected tables (`wp db export`) and `wp-config.php` before any change, checks the export, and stops without changing anything if the backup fails. Prints the commands to go back to the saved state.
+- `--backup-dir=<path>` option. Default: `private_html/db-prefix-backups` or `db-prefix-backups` next to the site folder. Folders inside the web root, and paths with `..` in a part not yet created, are refused. Files get unguessable names and `600` permissions; the folder gets an `.htaccess` and an `index.php`.
+
+### Changed
+
+- README rewritten for non-technical readers first, with the technical reference below.
+
 ## [1.0.0] - 2026-10-05
 
 ### Added
@@ -18,4 +30,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Object cache flushed after the rename.
 - English and French (`fr_FR`) translations, loaded from the site language.
 
+[1.1.0]: https://github.com/thierrypigot/wp-cli-db-prefix/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/thierrypigot/wp-cli-db-prefix/releases/tag/v1.0.0
