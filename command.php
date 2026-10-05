@@ -13,7 +13,8 @@
  * @package WP_CLI_DB_Prefix
  */
 
-if ( ! class_exists( 'WP_CLI' ) ) {
+// The WP_CLI constant, not the class: the class also exists when wp-cli/wp-cli is a dev dependency (unit tests).
+if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 	return;
 }
 

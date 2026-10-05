@@ -1,0 +1,101 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.1', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - run: composer install --no-interaction --no-progress
+
+      - run: vendor/bin/phpunit --testsuite unit
+
+  integration:
+    name: Integration (PHP ${{ matrix.php }}, WP ${{ matrix.wp }}, ${{ matrix.db }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Oldest supported WordPress (the command needs 6.2 for $wpdb->prepare( %i )).
+          - php: '7.4'
+            wp: '6.2'
+            db: 'mysql:8.0'
+            health: 'mysqladmin ping -h 127.0.0.1 -proot'
+            client: 'mysql'
+          - php: '8.3'
+            wp: 'latest'
+            db: 'mysql:8.0'
+            health: 'mysqladmin ping -h 127.0.0.1 -proot'
+            client: 'mysql'
+          - php: '8.4'
+            wp: 'latest'
+            db: 'mariadb:11.4'
+            health: 'healthcheck.sh --connect --innodb_initialized'
+            client: 'mariadb'
+    services:
+      database:
+        image: ${{ matrix.db }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="${{ matrix.health }}"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      WP_CLI_BIN: wp
+      WP_VERSION: ${{ matrix.wp }}
+      WP_DBP_DB_HOST: 127.0.0.1:3306
+      WP_DBP_DB_USER: root
+      WP_DBP_DB_PASS: root
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli
+          coverage: none
+          tools: wp-cli
+
+      # --safe and the restore test need mysqldump and the mysql client matching the server.
+      - name: Install the ${{ matrix.client }} client
+        if: matrix.client == 'mariadb'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+
+      - name: Show versions
+        run: |
+          wp --version
+          mysqldump --version || true
+          mariadb-dump --version || true
+
+      - run: composer install --no-interaction --no-progress
+
+      - run: vendor/bin/phpunit --testsuite integration
